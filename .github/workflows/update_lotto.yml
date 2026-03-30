@@ -1,1 +1,58 @@
+name: 🎲 로또 최신 회차 자동 업데이트
 
+on:
+  # 매주 토요일 21:10 KST (12:10 UTC) — 추첨(20:35) 후 여유있게 실행
+  schedule:
+    - cron: '10 12 * * 6'
+
+  # 수동 실행 (GitHub Actions 탭에서 "Run workflow" 클릭)
+  workflow_dispatch:
+    inputs:
+      force_round:
+        description: '강제 수집할 회차 번호 (비워두면 자동 탐지)'
+        required: false
+        default: ''
+
+jobs:
+  update-db:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # 파일 커밋 권한
+
+    steps:
+      # ── 1. 저장소 체크아웃 ──────────────────────────────────
+      - name: 📥 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js 설정 ─────────────────────────────────────
+      - name: ⚙️ Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── 3. 의존성 설치 ──────────────────────────────────────
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      # ── 4. 최신 회차 수집 스크립트 실행 ────────────────────
+      - name: 🔄 최신 회차 데이터 수집
+        env:
+          FORCE_ROUND: ${{ github.event.inputs.force_round }}
+        run: node scripts/fetch_latest.js
+
+      # ── 5. 변경사항 확인 후 커밋 ───────────────────────────
+      - name: 📝 변경사항 커밋 & 푸시
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 변경된 파일이 있을 때만 커밋
+          if git diff --quiet; then
+            echo "✅ 변경사항 없음 (이미 최신)"
+          else
+            ROUND=$(cat .latest_round 2>/dev/null || echo "unknown")
+            git add lotto_collector.js
+            git commit -m "🎲 로또 ${ROUND}회 자동 업데이트 [skip ci]"
+            git push
+            echo "✅ ${ROUND}회 커밋 완료"
+          fi
