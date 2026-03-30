@@ -1,0 +1,13 @@
+{
+  "name": "lotto-ai",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "로또 6/45 AI 번호 생성기 - 매주 자동 업데이트",
+  "scripts": {
+    "fetch": "node scripts/fetch_latest.js",
+    "dev": "npx serve . -p 3000"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

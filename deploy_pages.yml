@@ -1,0 +1,45 @@
+name: 🌐 GitHub Pages 배포
+
+on:
+  # 로또 업데이트 워크플로우 완료 후 자동 실행
+  workflow_run:
+    workflows: ["🎲 로또 최신 회차 자동 업데이트"]
+    types: [completed]
+
+  # main 브랜치 push 시에도 자동 배포
+  push:
+    branches: [main]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 체크아웃
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Pages 설정
+        uses: actions/configure-pages@v5
+
+      - name: 📤 Pages 아티팩트 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # 루트 폴더 전체를 Pages로 서빙
+          path: '.'
+
+      - name: 🚀 Pages 배포
+        id: deployment
+        uses: actions/deploy-pages@v4
